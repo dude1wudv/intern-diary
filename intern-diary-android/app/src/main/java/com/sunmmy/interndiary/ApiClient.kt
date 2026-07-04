@@ -149,6 +149,41 @@ class ApiClient(private val serverUrl: String, private val token: String) {
         }
     }
 
+    suspend fun generateReport(type: String, startDate: String, endDate: String): Result<ReportResult> {
+        val json = JSONObject().apply {
+            put("type", type)
+            put("start_date", startDate)
+            put("end_date", endDate)
+        }
+        val body: RequestBody = json.toString().toRequestBody(jsonMediaType)
+        val request = authedRequestBuilder("/api/actions/generate-report")
+            .post(body)
+            .build()
+        return runCatchingRequest(request).mapCatching { response ->
+            response.use {
+                val bodyStr = extractBodyOrThrow(it)
+                val obj = JSONObject(bodyStr)
+                val reportId = obj.optString("report_id")
+                if (reportId.isBlank()) throw ApiException("报告生成失败：缺少 report_id")
+                ReportResult(reportId, obj.optString("markdown"))
+            }
+        }
+    }
+
+    suspend fun downloadReportDocx(reportId: String): Result<ByteArray> {
+        val request = authedRequestBuilder("/api/reports/$reportId/files/report.docx")
+            .get()
+            .build()
+        return runCatchingRequest(request).mapCatching { response ->
+            response.use {
+                if (!it.isSuccessful) {
+                    throw ApiException("下载失败 (HTTP ${it.code})")
+                }
+                it.body?.bytes() ?: throw ApiException("下载内容为空")
+            }
+        }
+    }
+
     suspend fun getDraft(date: String): Result<String> {
         val request = authedRequestBuilder("/api/days/$date/draft").get().build()
         return runCatchingRequest(request).mapCatching { response ->
@@ -270,4 +305,9 @@ data class DiaryPreviewResult(
     val reply: String,
     val previewId: String,
     val changes: List<DiaryChange>,
+)
+
+data class ReportResult(
+    val reportId: String,
+    val markdown: String,
 )

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -15,6 +17,15 @@ class SortIn(BaseModel):
 class GenerateIn(BaseModel):
     date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     word_count: int = 800
+    extra_instruction: str = ""
+
+
+class ReportGenerateIn(BaseModel):
+    type: str = Field(pattern=r"^(weekly|monthly|internship_summary)$")
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    template_id: Optional[str] = None
+    word_count: Optional[int] = None
     extra_instruction: str = ""
 
 

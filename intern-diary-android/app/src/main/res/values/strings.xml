@@ -21,6 +21,7 @@
     <string name="action_generate_diary">生成正式日记</string>
     <string name="action_generate_draft">生成日记草稿</string>
     <string name="action_download_docx">下载 Word</string>
+    <string name="action_generate_report">生成周报</string>
     <string name="action_refresh">刷新状态</string>
     <string name="action_copy">复制</string>
     <string name="draft_card_title">日记草稿</string>

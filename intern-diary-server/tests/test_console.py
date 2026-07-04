@@ -49,6 +49,10 @@ def test_console_page_contains_app_shell():
     assert "Diary Console" in r.text
     assert "localStorage" in r.text
     assert "/api/days/" in r.text
+    assert "reportType" in r.text
+    assert "/api/report-templates" in r.text
+    assert "/api/actions/generate-report" in r.text
+    assert "/api/reports/" in r.text
 
 
 def test_console_page_renders_markdown_in_scrollable_viewer():

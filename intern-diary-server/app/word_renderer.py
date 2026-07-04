@@ -1,11 +1,22 @@
+import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, Iterable, List
 
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.text.paragraph import Paragraph
 
 from .config import settings
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
+REPORT_TEMPLATE_REGISTRY = TEMPLATES_DIR / "report_templates.json"
+REPORT_TYPE_NAMES = {
+    "weekly": "周报",
+    "monthly": "月报",
+    "internship_summary": "实习总结",
+}
 
 
 def _copy_run_format(paragraph, like) -> None:
@@ -55,21 +66,61 @@ def _delete(paragraph) -> None:
     paragraph._element.getparent().remove(paragraph._element)
 
 
-def render_docx(date: str, title: str, body: List[str], values: Dict[str, str], out: Path) -> Path:
-    doc = Document(str(settings().template_path))
+def _iter_paragraphs(doc) -> Iterable[Paragraph]:
+    yield from doc.paragraphs
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                yield from cell.paragraphs
+
+
+def _values(values: Dict[str, Any]) -> Dict[str, str]:
+    out = {}
+    for k, v in values.items():
+        text = "" if v is None else str(v)
+        out[k] = text
+        if not (k.startswith("{{") and k.endswith("}}")):
+            out[f"{{{{{k}}}}}"] = text
+    return out
+
+
+def load_report_templates(path: Path = REPORT_TEMPLATE_REGISTRY) -> List[Dict[str, Any]]:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)["templates"]
+
+
+def get_report_template(report_type: str, template_id: str = "") -> Dict[str, Any]:
+    for item in load_report_templates():
+        if template_id and item["id"] == template_id:
+            return item
+        if not template_id and item["type"] == report_type:
+            return item
+    raise ValueError(f"report template not found: {template_id or report_type}")
+
+
+def render_docx(
+    date: str,
+    title: str,
+    body: List[str],
+    values: Dict[str, str],
+    out: Path,
+    template_path: Path = None,
+) -> Path:
+    doc = Document(str(template_path or settings().template_path))
     template_samples = [
         p for p in doc.paragraphs
         if p.text in {"标题1", "标题2", "标题3", "标题4"} or p.text.startswith("这是正文的示例")
     ]
     title_like = next((p for p in doc.paragraphs if p.text == "标题1"), None)
     body_like = next((p for p in doc.paragraphs if p.text.startswith("这是正文的示例")), None)
-    name = values.get("{{姓名}}", "")
-    klass = values.get("{{班级}}", "")
-    student_id = values.get("{{学号}}", "")
-    merged = dict(values)
+    merged = _values(values)
+    name = merged.get("{{姓名}}", "")
+    klass = merged.get("{{班级}}", "")
+    student_id = merged.get("{{学号}}", "")
     merged.update(
         {
             "{{日期}}": date,
+            "{{标题}}": title,
             "{{日记标题}}": title,
             "{{正文}}": "\n".join(body),
             "张三": name,
@@ -79,10 +130,10 @@ def render_docx(date: str, title: str, body: List[str], values: Dict[str, str], 
         }
     )
     used_title_placeholder = used_body_placeholder = False
-    for p in doc.paragraphs:
+    for p in _iter_paragraphs(doc):
         before = p.text
-        if "{{日记标题}}" in before:
-            _set_text(p, before.replace("{{日记标题}}", title), title_like)
+        if "{{日记标题}}" in before or "{{标题}}" in before:
+            _set_text(p, before.replace("{{日记标题}}", title).replace("{{标题}}", title), title_like)
             used_title_placeholder = True
             continue
         if "{{正文}}" in before:
@@ -112,3 +163,35 @@ def render_docx(date: str, title: str, body: List[str], values: Dict[str, str], 
     out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(out))
     return out
+
+
+def render_report_docx(
+    report_type: str,
+    start_date: str,
+    end_date: str,
+    title: str,
+    body: List[str],
+    values: Dict[str, str],
+    out: Path,
+    template_id: str = "",
+) -> Path:
+    template = get_report_template(report_type, template_id)
+    report_values = _values(values)
+    report_values.update(
+        {
+            "{{报告类型}}": REPORT_TYPE_NAMES.get(report_type, report_type),
+            "{{开始日期}}": start_date,
+            "{{结束日期}}": end_date,
+            "专业实习 实习日记": f"专业实习 {REPORT_TYPE_NAMES.get(report_type, report_type)}",
+        }
+    )
+    name = title or f"{report_values['{{报告类型}}']}（{start_date} 至 {end_date}）"
+    body_lines = body if isinstance(body, list) else str(body).splitlines()
+    return render_docx(
+        end_date,
+        name,
+        body_lines,
+        report_values,
+        out,
+        TEMPLATES_DIR / template.get("file", "diary_template_working.docx"),
+    )

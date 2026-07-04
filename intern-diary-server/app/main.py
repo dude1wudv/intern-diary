@@ -1,5 +1,6 @@
+import json
 import re
-from datetime import datetime, timezone
+from datetime import date as date_type, datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -15,20 +16,24 @@ from .model_client import (
     assistant_diary_preview,
     describe_image,
     generate_diary_json,
+    generate_report_markdown,
     sort_day_text,
 )
-from .paths import day_dir
+from .paths import day_dir, day_path, report_dir
 from .schemas import (
     AssistantChatIn,
     DiaryEditConfirmIn,
     DiaryEditPreviewIn,
     GenerateIn,
+    ReportGenerateIn,
     SortIn,
     TextEntryIn,
 )
-from .word_renderer import render_docx
+from .word_renderer import load_report_templates, render_docx, render_report_docx
 
 app = FastAPI(title="Intern Diary")
+
+_DEFAULT_REPORT_WORDS = {"weekly": 1000, "monthly": 1500, "internship_summary": 3000}
 
 CONSOLE_HTML = r"""<!doctype html>
 <html lang="zh-CN">
@@ -51,7 +56,7 @@ CONSOLE_HTML = r"""<!doctype html>
     * { box-sizing:border-box; }
     html, body { height:100%; }
     body { margin:0; overflow:hidden; font-family:var(--sans); color:var(--ink); background:var(--bg); }
-    button, input, textarea { font:inherit; }
+    button, input, textarea, select { font:inherit; }
     .app-shell { height:100vh; display:grid; grid-template-columns:288px minmax(0,1fr); }
     .sidebar { min-height:0; background:var(--panel); border-right:1px solid var(--border); padding:20px 18px; display:flex; flex-direction:column; gap:22px; overflow:auto; }
     .brand { display:flex; gap:10px; align-items:center; }
@@ -62,11 +67,11 @@ CONSOLE_HTML = r"""<!doctype html>
     .field { margin:0 0 10px; }
     .field:last-child { margin-bottom:0; }
     label { display:block; color:var(--muted); font-size:13px; margin:0 0 6px; }
-    input, textarea {
+    input, textarea, select {
       width:100%; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--panel);
       color:var(--ink); padding:8px 10px; outline:none; font-size:14px;
     }
-    input:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+    input:focus, textarea:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
     textarea { min-height:76px; max-height:140px; resize:vertical; line-height:1.5; }
     .btn {
       border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 12px; cursor:pointer;
@@ -224,6 +229,19 @@ CONSOLE_HTML = r"""<!doctype html>
       <button class="link-btn" onclick="downloadDocx()">↓ 下载 Word</button>
       <p class="message" id="msg"></p>
     </section>
+
+    <section>
+      <div class="section-title">Report</div>
+      <div class="field"><label>报告类型</label><select id="reportType" onchange="paintReportTemplates()"><option value="weekly">周报</option><option value="monthly">月报</option><option value="internship_summary">实习总结</option></select></div>
+      <div class="field"><label>开始日期</label><input id="reportStart" type="date"></div>
+      <div class="field"><label>结束日期</label><input id="reportEnd" type="date"></div>
+      <div class="field"><label>模板</label><select id="reportTemplate"></select></div>
+      <button class="btn primary block" id="reportBtn" onclick="generateReport()">生成报告</button>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn outline" onclick="downloadReport('draft')">Markdown</button>
+        <button class="btn outline" onclick="downloadReport('docx')">Word</button>
+      </div>
+    </section>
   </aside>
 
   <main class="workspace">
@@ -293,12 +311,16 @@ const $ = (id) => document.getElementById(id);
 const today = new Date().toISOString().slice(0, 10);
 const titles = {"raw-text":"原始记录", "sorted-notes":"整理稿", "draft":"日记草稿", "images":"图片描述"};
 $("date").value = today;
+$("reportStart").value = today;
+$("reportEnd").value = today;
 $("token").value = localStorage.getItem("diaryConsoleToken") || "";
+let reportTemplates = [];
+let lastReportId = "";
 function token(){ return $("token").value.trim(); }
 function headers(json=false){ const h = {Authorization: `Bearer ${token()}`}; if(json) h["Content-Type"]="application/json"; return h; }
 function msg(t){ $("msg").textContent = t || ""; }
 function setMeta(t){ $("panelMeta").textContent = t || "ready"; }
-function saveToken(){ localStorage.setItem("diaryConsoleToken", token()); refreshAll(); }
+function saveToken(){ localStorage.setItem("diaryConsoleToken", token()); refreshAll(); loadReportTemplates(); }
 function clearToken(){ localStorage.removeItem("diaryConsoleToken"); $("token").value=""; msg("Token 已清除"); }
 function setActive(btn, key){ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b===btn || b.dataset.tab===key)); $("viewTitle").textContent = titles[key] || "内容预览"; $("previewView").style.display = "grid"; $("assistantView").style.display = "none"; }
 function escapeHtml(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
@@ -359,7 +381,37 @@ async function downloadDocx(){
   try { const d = $("date").value || today; const blob = await (await api(`/api/days/${d}/files/diary_final.docx`, {headers:headers()})).blob(); const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = `diary_final_${d}.docx`; a.click(); URL.revokeObjectURL(url); }
   catch(e) { msg(e.message); }
 }
+function paintReportTemplates(){
+  const type = $("reportType").value;
+  const items = reportTemplates.filter(t => t.type === type);
+  $("reportTemplate").innerHTML = '<option value="">默认模板</option>' + items.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name || t.id)}</option>`).join("");
+}
+async function loadReportTemplates(){
+  try { reportTemplates = (await (await api("/api/report-templates", {headers:headers()})).json()).templates || []; paintReportTemplates(); }
+  catch(e) { reportTemplates = []; paintReportTemplates(); }
+}
+function downloadBlob(blob, name){ const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url); }
+async function generateReport(){
+  $("reportBtn").disabled = true; msg("报告生成中...");
+  try {
+    const body = {type:$("reportType").value, start_date:$("reportStart").value || today, end_date:$("reportEnd").value || today, extra_instruction:$("instruction").value};
+    if ($("reportTemplate").value) body.template_id = $("reportTemplate").value;
+    const data = await (await api("/api/actions/generate-report", {method:"POST", headers:headers(true), body:JSON.stringify(body)})).json();
+    lastReportId = data.report_id;
+    $("previewView").style.display = "grid"; $("assistantView").style.display = "none"; $("viewTitle").textContent = "报告草稿"; $("panelTitle").textContent = "Report Preview";
+    $("content").innerHTML = renderMarkdown(data.markdown || ""); setMeta(lastReportId); msg("报告已生成，可下载 Markdown / Word");
+  } catch(e) { msg(e.message); } finally { $("reportBtn").disabled = false; }
+}
+async function downloadReport(kind){
+  try {
+    if (!lastReportId) throw new Error("请先生成报告");
+    const path = kind === "docx" ? `/api/reports/${lastReportId}/files/report.docx` : `/api/reports/${lastReportId}/draft`;
+    const ext = kind === "docx" ? "docx" : "md";
+    downloadBlob(await (await api(path, {headers:headers()})).blob(), `${lastReportId}.${ext}`);
+  } catch(e) { msg(e.message); }
+}
 refreshAll();
+if (token()) loadReportTemplates();
 
 // ---- AI 助手 Tab ----
 const ASSISTANT_STORE_KEY = "diaryAssistantStore";
@@ -883,6 +935,136 @@ def collect_day_source(date: str, user: UserContext) -> str:
     for f in sorted((p / "image_descriptions").glob("*.md")):
         parts.append(f.read_text(encoding="utf-8"))
     return "\n\n---\n\n".join(parts)
+
+
+def _parse_day(value: str) -> date_type:
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bad date")
+    if parsed.isoformat() != value:
+        raise HTTPException(status_code=400, detail="bad date")
+    return parsed
+
+
+def _range_days(start_date: str, end_date: str) -> list[str]:
+    start = _parse_day(start_date)
+    end = _parse_day(end_date)
+    if end < start:
+        raise HTTPException(status_code=400, detail="end_date before start_date")
+    return [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
+
+
+def collect_range_source(start_date: str, end_date: str, user: UserContext) -> str:
+    parts = []
+    for d in _range_days(start_date, end_date):
+        p = day_path(d, user)
+        day_parts = []
+        sorted_notes_path = p / "sorted_notes.md"
+        raw_path = p / "raw_text.md"
+        if sorted_notes_path.exists():
+            day_parts.append(sorted_notes_path.read_text(encoding="utf-8"))
+        elif raw_path.exists():
+            day_parts.append(raw_path.read_text(encoding="utf-8"))
+        desc_dir = p / "image_descriptions"
+        if desc_dir.exists():
+            day_parts.extend(f.read_text(encoding="utf-8") for f in sorted(desc_dir.glob("*.md")))
+        if day_parts:
+            parts.append(f"## {d}\n\n" + "\n\n---\n\n".join(day_parts))
+    return "\n\n======\n\n".join(parts)
+
+
+@app.get("/api/report-templates", )
+def report_templates(user: UserContext = Depends(require_user)):
+    return {"templates": load_report_templates()}
+
+
+@app.post("/api/actions/generate-report", )
+async def generate_report(body: ReportGenerateIn, user: UserContext = Depends(require_user)):
+    _range_days(body.start_date, body.end_date)
+    templates = load_report_templates()
+    template = next(
+        (
+            item for item in templates
+            if item["id"] == body.template_id or (not body.template_id and item["type"] == body.type)
+        ),
+        None,
+    )
+    if template is None:
+        raise HTTPException(status_code=404, detail="template not found")
+    if template["type"] != body.type:
+        raise HTTPException(status_code=400, detail="template type mismatch")
+    template_id = template["id"]
+
+    source = collect_range_source(body.start_date, body.end_date, user)
+    validation = [] if source else ["no_source"]
+    word_count = body.word_count or _DEFAULT_REPORT_WORDS[body.type]
+    try:
+        markdown = await generate_report_markdown(
+            body.type,
+            body.start_date,
+            body.end_date,
+            source,
+            word_count,
+            body.extra_instruction,
+        )
+    except RuntimeError:
+        raise HTTPException(status_code=502, detail="generate-report failed")
+
+    report_id = f"{body.type}-{body.start_date}_{body.end_date}-{uuid4().hex[:4]}"
+    p = report_dir(report_id, user)
+    (p / "report.md").write_text(markdown, encoding="utf-8")
+    render_report_docx(
+        body.type,
+        body.start_date,
+        body.end_date,
+        "",
+        markdown.splitlines(),
+        user.profile_values,
+        p / "report.docx",
+        template_id,
+    )
+    meta = {
+        "status": "drafted",
+        "report_id": report_id,
+        "type": body.type,
+        "start_date": body.start_date,
+        "end_date": body.end_date,
+        "template_id": template_id,
+        "word_count": word_count,
+        "markdown_file": "report.md",
+        "docx_file": "report.docx",
+        "validation": validation,
+    }
+    (p / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {**meta, "markdown": markdown}
+
+
+def _report_file(report_id: str, name: str, user: UserContext):
+    try:
+        f = report_dir(report_id, user, create=False) / name
+    except ValueError:
+        raise HTTPException(status_code=404, detail="report not found")
+    if not f.exists():
+        raise HTTPException(status_code=404, detail="report not found")
+    return f
+
+
+@app.get("/api/reports/{report_id}", )
+def report_meta(report_id: str, user: UserContext = Depends(require_user)):
+    return json.loads(_report_file(report_id, "meta.json", user).read_text(encoding="utf-8"))
+
+
+@app.get("/api/reports/{report_id}/draft", )
+def report_draft(report_id: str, user: UserContext = Depends(require_user)):
+    f = _report_file(report_id, "report.md", user)
+    return FileResponse(f, media_type="text/markdown; charset=utf-8", filename=f"{report_id}.md")
+
+
+@app.get("/api/reports/{report_id}/files/report.docx", )
+def report_docx(report_id: str, user: UserContext = Depends(require_user)):
+    f = _report_file(report_id, "report.docx", user)
+    return FileResponse(f, filename=f"{report_id}.docx")
 
 
 @app.post("/api/actions/sort-day", )

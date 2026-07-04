@@ -1,0 +1,25 @@
+{
+  "templates": [
+    {
+      "id": "weekly-default",
+      "type": "weekly",
+      "name": "默认周报",
+      "file": "diary_template_working.docx",
+      "variables": ["姓名", "班级", "学号", "开始日期", "结束日期", "报告类型"]
+    },
+    {
+      "id": "monthly-default",
+      "type": "monthly",
+      "name": "默认月报",
+      "file": "diary_template_working.docx",
+      "variables": ["姓名", "班级", "学号", "开始日期", "结束日期", "报告类型"]
+    },
+    {
+      "id": "internship-summary-default",
+      "type": "internship_summary",
+      "name": "默认实习总结",
+      "file": "diary_template_working.docx",
+      "variables": ["姓名", "班级", "学号", "开始日期", "结束日期", "报告类型"]
+    }
+  ]
+}

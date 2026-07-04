@@ -35,6 +35,11 @@ _DEFAULT_DIARY_GENERATION_PROMPT = (
     "字段为 date,title,body_paragraphs,safety_notes，"
     "语气正式客观，不编造事实，不写敏感信息，不出现模型痕迹用语。"
 )
+_DEFAULT_REPORT_GENERATION_PROMPT = (
+    "你是一个专业实习报告生成助手，只输出 Markdown 正文。"
+    "根据日期范围内的真实素材生成周报、月报或实习总结，"
+    "不编造事实，不写敏感信息，不出现模型痕迹用语。"
+)
 
 
 def _load_prompt(filename: str, default: str) -> str:
@@ -378,3 +383,51 @@ async def generate_diary_json(date: str, source: str, word_count: int, extra: st
             "body_paragraphs": [raw],
             "safety_notes": ["模型返回内容不是有效 JSON，已原文保留，请人工检查。"],
         }
+
+
+async def generate_report_markdown(
+    report_type: str,
+    start_date: str,
+    end_date: str,
+    source: str,
+    word_count: int,
+    extra: str = "",
+) -> str:
+    title = {
+        "weekly": "实习周报",
+        "monthly": "实习月报",
+        "internship_summary": "实习总结",
+    }.get(report_type, "实习报告")
+    if settings().codex_enabled:
+        system_prompt = _load_prompt("report_generation.md", _DEFAULT_REPORT_GENERATION_PROMPT)
+        context = _load_context()
+        parts = [system_prompt, f"报告类型：{title}", f"日期范围：{start_date} 至 {end_date}", f"目标字数：约 {word_count} 字"]
+        if context:
+            parts.append(f"## 通用背景\n{context}")
+        parts.append(f"## 日期范围素材\n{source or '（无）'}")
+        if extra:
+            parts.append(f"## 用户补充说明\n{extra}")
+        return await asyncio.to_thread(_codex_exec, "\n\n".join(parts))
+
+    if not settings().openai_api_key:
+        return (
+            f"# {title}（{start_date} 至 {end_date}）\n\n"
+            "## 实习内容概述\n\n"
+            + (source[:1000] if source else "本周期暂无可聚合素材，请补充每日记录后重新生成。")
+            + "\n\n## 学习收获\n\n结合本周期记录，对实习流程和专业实践进行了阶段性复盘。\n"
+            "\n## 问题与改进\n\n后续将继续补充现场记录，并按要求完善报告内容。\n"
+        )
+
+    system_prompt = _load_prompt("report_generation.md", _DEFAULT_REPORT_GENERATION_PROMPT)
+    context = _load_context()
+    user_parts = [f"报告类型：{title}", f"日期范围：{start_date} 至 {end_date}", f"目标字数：约 {word_count} 字"]
+    if context:
+        user_parts.append(f"## 通用背景\n{context}")
+    user_parts.append(f"## 日期范围素材\n{source or '（无）'}")
+    if extra:
+        user_parts.append(f"## 用户补充说明\n{extra}")
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": "\n\n".join(user_parts)},
+    ]
+    return await _chat(messages)

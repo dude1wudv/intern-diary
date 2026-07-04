@@ -122,6 +122,7 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
         binding.chipGenerateDraft.setOnClickListener { generateDraft() }
         binding.chipGenerateDiary.setOnClickListener { confirmGenerateDiary() }
         binding.chipDownloadDocx.setOnClickListener { downloadDocx() }
+        binding.chipGenerateReport.setOnClickListener { confirmGenerateWeeklyReport() }
         binding.chipRefresh.setOnClickListener { refreshStatus() }
         binding.chipDiaryEditMode.setOnCheckedChangeListener { _, checked -> onAssistantModeToggled(checked) }
 
@@ -696,6 +697,22 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
         return sdf.format(Date(millis))
     }
 
+    private fun weekRangeFor(date: String): Pair<String, String> {
+        val tz = TimeZone.getTimeZone("Asia/Shanghai")
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
+            timeZone = tz
+            isLenient = false
+        }
+        val cal = Calendar.getInstance(tz, Locale.CHINA)
+        cal.time = runCatching { sdf.parse(date) }.getOrNull() ?: Date()
+        cal.firstDayOfWeek = Calendar.MONDAY
+        val offset = if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) -6 else Calendar.MONDAY - cal.get(Calendar.DAY_OF_WEEK)
+        cal.add(Calendar.DAY_OF_MONTH, offset)
+        val start = sdf.format(cal.time)
+        cal.add(Calendar.DAY_OF_MONTH, 6)
+        return start to sdf.format(cal.time)
+    }
+
     // endregion
 
     private fun openSettings() {
@@ -969,6 +986,47 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
                     }
                 },
                 onFailure = { snack("下载失败: ${it.message}") }
+            )
+        }
+    }
+
+    private fun confirmGenerateWeeklyReport() {
+        val (start, end) = weekRangeFor(currentDate)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.action_generate_report)
+            .setMessage("将生成 $start 至 $end 的周报并下载 Word，可能需要一些时间。是否继续？")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("生成") { _, _ -> generateWeeklyReport(start, end) }
+            .show()
+    }
+
+    private fun generateWeeklyReport(startDate: String, endDate: String) {
+        val client = requireClient() ?: return
+        addChatMessage(ChatMessage.Assistant(nextChatId(), nowTimeString(), "正在生成周报（$startDate 至 $endDate）…"))
+        setBusy(true)
+        lifecycleScope.launch {
+            val report = client.generateReport("weekly", startDate, endDate)
+            if (report.isFailure) {
+                setBusy(false)
+                snack("周报生成失败: ${report.exceptionOrNull()?.message}")
+                return@launch
+            }
+            val value = report.getOrThrow()
+            if (value.markdown.isNotBlank()) {
+                addChatMessage(ChatMessage.DiaryDraft(nextChatId(), nowTimeString(), value.markdown))
+            }
+            val docx = client.downloadReportDocx(value.reportId)
+            setBusy(false)
+            docx.fold(
+                onSuccess = { bytes ->
+                    val savedPath = saveDocxToDownloads(bytes, "weekly_report_${startDate}_$endDate.docx")
+                    if (savedPath != null) {
+                        addChatMessage(ChatMessage.Assistant(nextChatId(), nowTimeString(), "已保存周报 Word 文件到：$savedPath"))
+                    } else {
+                        snack("保存文件失败")
+                    }
+                },
+                onFailure = { snack("周报下载失败: ${it.message}") },
             )
         }
     }
