@@ -78,7 +78,7 @@ Install the APK and open Settings:
 
 ## Version
 
-Current release: `v2.0.0`.
+Current release: `v2.1.0`.
 
 See [CHANGELOG.md](CHANGELOG.md).
 

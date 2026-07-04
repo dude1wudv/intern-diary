@@ -1,17 +1,18 @@
-# Intern Diary v2.0.0
+# Intern Diary v2.1.0
 
 ## Highlights
 
-- Android 设置页支持填写后端服务器地址和 API Token。
-- LLM 服务商配置保留在后端：`OPENAI_BASE_URL` / `OPENAI_API_KEY` / `OPENAI_MODEL`。
-- 提供中文默认 README、英文 README、中文部署教程和使用方法。
-- 发布 Debug APK，方便直接安装测试。
+- 新增实习成果生成器：周报、月报、实习总结。
+- 新增 Report API：模板列表、日期范围生成、Markdown/Word 下载。
+- Web Console 新增 Report 区，可选择类型、日期范围和模板。
+- Android 新增“生成周报”入口，生成后自动保存 Word。
+- 增加 weekly/monthly/summary、缺天、LLM 失败等后端回归测试。
 
 ## Assets
 
-- `intern-diary-debug-v2.0.apk`
+- `intern-diary-debug-v2.1.0.apk`
 
 ## Verification
 
-- Backend: `python -m pytest -q` -> 30 passed
-- Android: `./gradlew.bat assembleDebug --no-daemon` -> BUILD SUCCESSFUL
+- Backend: `python -m pytest` -> 37 passed
+- Android: `.\gradlew.bat :app:assembleDebug` -> BUILD SUCCESSFUL

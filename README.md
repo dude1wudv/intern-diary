@@ -150,7 +150,7 @@ cd intern-diary-android
 
 ## 版本
 
-当前发布版本：`v2.0.0`。
+当前发布版本：`v2.1.0`。
 
 更新记录见 [CHANGELOG.md](CHANGELOG.md)，规划见 [ROADMAP.md](ROADMAP.md)。
 
