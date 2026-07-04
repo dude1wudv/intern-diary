@@ -398,10 +398,13 @@ async def generate_report_markdown(
         "monthly": "实习月报",
         "internship_summary": "实习总结",
     }.get(report_type, "实习报告")
+    summary_required = "必须明确包含：任务、成果、收获、不足、展望。" if report_type == "internship_summary" else ""
     if settings().codex_enabled:
         system_prompt = _load_prompt("report_generation.md", _DEFAULT_REPORT_GENERATION_PROMPT)
         context = _load_context()
         parts = [system_prompt, f"报告类型：{title}", f"日期范围：{start_date} 至 {end_date}", f"目标字数：约 {word_count} 字"]
+        if summary_required:
+            parts.append(summary_required)
         if context:
             parts.append(f"## 通用背景\n{context}")
         parts.append(f"## 日期范围素材\n{source or '（无）'}")
@@ -410,6 +413,16 @@ async def generate_report_markdown(
         return await asyncio.to_thread(_codex_exec, "\n\n".join(parts))
 
     if not settings().openai_api_key:
+        if report_type == "internship_summary":
+            return (
+                f"# {title}（{start_date} 至 {end_date}）\n\n"
+                "## 实习任务\n\n"
+                + (source[:1000] if source else "本周期暂无可聚合素材，请补充每日记录后重新生成。")
+                + "\n\n## 实习成果\n\n结合日期范围内记录，对已完成工作和阶段性成果进行归纳。\n"
+                "\n## 实习收获\n\n通过连续实习记录，进一步理解专业流程、协作方式和复盘方法。\n"
+                "\n## 不足反思\n\n后续需要继续补充现场记录，完善问题定位和改进过程描述。\n"
+                "\n## 后续展望\n\n下一阶段将围绕未完成任务持续实践，并按要求完善总结材料。\n"
+            )
         return (
             f"# {title}（{start_date} 至 {end_date}）\n\n"
             "## 实习内容概述\n\n"
@@ -421,6 +434,8 @@ async def generate_report_markdown(
     system_prompt = _load_prompt("report_generation.md", _DEFAULT_REPORT_GENERATION_PROMPT)
     context = _load_context()
     user_parts = [f"报告类型：{title}", f"日期范围：{start_date} 至 {end_date}", f"目标字数：约 {word_count} 字"]
+    if summary_required:
+        user_parts.append(summary_required)
     if context:
         user_parts.append(f"## 通用背景\n{context}")
     user_parts.append(f"## 日期范围素材\n{source or '（无）'}")

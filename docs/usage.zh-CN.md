@@ -43,11 +43,19 @@ https://your-diary.example.com/console
 
 浏览器中输入同一个 API Token 即可使用。
 
-## 5. AI 助手
+## 5. 生成实习成果报告
+
+后端支持按日期范围生成周报、月报和实习总结：
+
+- 报告模板来自 `GET /api/report-templates`，默认包含 `weekly-default`、`monthly-default`、`internship-summary-default`。
+- 网页控制台 `/console` 的 Report 区可选择报告类型、开始日期、结束日期和模板，生成后下载 Markdown 或 Word。
+- Android 当天页的“生成周报”会按当前日期所在周调用 `POST /api/actions/generate-report`，并把 Word 保存到下载目录。
+
+## 6. AI 助手
 
 AI 助手支持普通聊天和日记修改辅助。所有模型调用都由后端完成，手机端不保存 LLM API Key。
 
-## 6. 数据保存位置
+## 7. 数据保存位置
 
 后端默认保存到 `DATA_DIR`，本地运行时通常是：
 

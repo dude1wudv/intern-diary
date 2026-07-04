@@ -25,8 +25,9 @@
 | 模块 | 能力 |
 | --- | --- |
 | Android App | 输入服务器地址/API Token、提交文字、上传图片、AI 助手、查看历史 |
-| FastAPI 后端 | Bearer Token 鉴权、按日期存储、整理素材、生成日记、Word 渲染 |
-| 网页控制台 | `/console` 管理当天素材、触发生成、下载 Word |
+| FastAPI 后端 | Bearer Token 鉴权、按日期存储、整理素材、生成日记/周报/月报/实习总结、Word 渲染 |
+| 报告模板 | 内置周报、月报、实习总结模板，可通过 Report API 选择模板并导出 Markdown/Word |
+| 网页控制台 | `/console` 管理当天素材、触发日记或报告生成、下载 Markdown/Word |
 | LLM 配置 | 后端通过环境变量配置 `OPENAI_BASE_URL` / `OPENAI_API_KEY` / `OPENAI_MODEL` |
 | 部署 | 支持本地运行、Docker、反向代理 HTTPS |
 
@@ -116,6 +117,13 @@ intern-diary-android/app/build/outputs/apk/debug/app-debug.apk
 4. 部署后端到服务器并配置 HTTPS。
 5. 构建 APK，手机端填写服务器地址和 Token。
 6. 发版时按 [发布流程](docs/release-process.zh-CN.md) 创建 Tag / GitHub Release 并上传 APK。
+
+## 实习成果生成器
+
+- 报告类型：`weekly` 周报、`monthly` 月报、`internship_summary` 实习总结。
+- Report API：`GET /api/report-templates` 查询模板，`POST /api/actions/generate-report` 按日期范围生成报告。
+- Web Console：打开 `/console`，在 Report 区选择类型、日期范围和模板，生成后可下载 Markdown / Word。
+- Android：当天页“生成周报”入口会按当前日期所在周生成周报，并自动下载 Word 到系统下载目录。
 
 ## 测试
 

@@ -40,7 +40,7 @@ Content-Type: multipart/form-data
 字段：
 
 - `date`
-- `file`
+- `image`
 - `note` 可选
 
 ## 获取日期状态
@@ -71,6 +71,65 @@ Content-Type: application/json
   "date": "2026-07-04",
   "instruction": "语气正式一点"
 }
+```
+
+## 报告模板
+
+```http
+GET /api/report-templates
+```
+
+返回周报、月报、实习总结等可用模板：
+
+```json
+{
+  "templates": [
+    {
+      "id": "weekly-default",
+      "type": "weekly",
+      "name": "默认周报",
+      "variables": ["姓名", "班级", "学号", "开始日期", "结束日期", "报告类型"]
+    }
+  ]
+}
+```
+
+## 生成报告
+
+```http
+POST /api/actions/generate-report
+Content-Type: application/json
+
+{
+  "type": "weekly",
+  "start_date": "2026-07-01",
+  "end_date": "2026-07-07",
+  "template_id": "weekly-default",
+  "word_count": 1000,
+  "extra_instruction": "突出技术收获"
+}
+```
+
+`type` 可选：`weekly`、`monthly`、`internship_summary`。`template_id` 和 `word_count` 可省略，后端会使用该类型默认模板和默认字数。
+
+响应包含 `report_id`、`markdown`、`validation`，以及可用于后续下载的文件信息。
+
+## 获取报告元数据
+
+```http
+GET /api/reports/{report_id}
+```
+
+## 下载报告 Markdown
+
+```http
+GET /api/reports/{report_id}/draft
+```
+
+## 下载报告 Word
+
+```http
+GET /api/reports/{report_id}/files/report.docx
 ```
 
 ## 下载 Word

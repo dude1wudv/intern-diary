@@ -24,8 +24,17 @@ pytest
 - `app/main.py`：HTTP API 和网页控制台。
 - `app/auth.py`：Bearer Token 鉴权。
 - `app/model_client.py`：LLM 调用和无 Key 占位输出。
-- `app/word_renderer.py`：Word 渲染。
-- `app/paths.py`：运行数据路径。
+- `app/word_renderer.py`：日记和报告 Word 渲染、报告模板加载。
+- `app/paths.py`：运行数据路径，包括按 `report_id` 保存的报告目录。
+- `app/schemas.py`：日记、AI 助手和 Report API 入参模型。
+
+Report API：
+
+- `GET /api/report-templates`：读取 `templates/report_templates.json`。
+- `POST /api/actions/generate-report`：按 `type`、`start_date`、`end_date` 生成报告草稿和 Word。
+- `GET /api/reports/{report_id}`：读取报告元数据。
+- `GET /api/reports/{report_id}/draft`：下载 Markdown。
+- `GET /api/reports/{report_id}/files/report.docx`：下载 Word。
 
 ## Android 开发
 
@@ -38,8 +47,8 @@ cd intern-diary-android
 
 - `SettingsStore.kt`：保存服务器地址、API Token、主题。
 - `SettingsSheet.kt`：设置页。
-- `ApiClient.kt`：HTTP 请求。
-- `TodayActivity.kt`：主页面交互。
+- `ApiClient.kt`：HTTP 请求，包括生成周报和下载报告 Word。
+- `TodayActivity.kt`：主页面交互，包括“生成周报”入口。
 
 ## 提交前检查
 
