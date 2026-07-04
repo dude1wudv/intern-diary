@@ -1,0 +1,30 @@
+# runtime secrets/data
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.db
+*.log
+intern-diary-server/data/
+intern-diary-server/tmp/
+intern-diary-server/.venv/
+intern-diary-server/.pytest_cache/
+intern-diary-server/**/*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Android local/build/signing
+intern-diary-android/local.properties
+intern-diary-android/.gradle/
+intern-diary-android/**/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+release-assets/
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

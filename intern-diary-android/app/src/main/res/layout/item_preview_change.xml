@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_compose_bar"
+    android:orientation="vertical"
+    android:layout_marginBottom="8dp"
+    android:padding="10dp">
+
+    <TextView
+        android:id="@+id/textTarget"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        tools:text="diary_draft.md" />
+
+    <TextView
+        android:id="@+id/textAfterSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
+        tools:text="将草稿语气改为更正式、客观的表达" />
+
+    <TextView
+        android:id="@+id/btnToggleDiff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/preview_show_diff"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:id="@+id/diffContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textBeforeContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:maxLines="12"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            tools:text="修改前内容" />
+
+        <TextView
+            android:id="@+id/textNewContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:maxLines="12"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="12sp"
+            tools:text="修改后内容" />
+    </LinearLayout>
+</LinearLayout>

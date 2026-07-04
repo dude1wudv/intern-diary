@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher -->
+    <color name="ic_launcher_background">#D97757</color>
+
+    <!-- Claude-style light palette (warm off-white / cream) -->
+    <color name="brand_coral">#D97757</color>
+    <color name="brand_coral_dark">#BF6248</color>
+
+    <color name="light_background">#FAF9F5</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_surface_variant">#F0EEE6</color>
+    <color name="light_on_background">#25231F</color>
+    <color name="light_on_surface">#25231F</color>
+    <color name="light_on_surface_variant">#6B6A63</color>
+    <color name="light_outline">#E4E1D6</color>
+
+    <color name="light_user_bubble">#EBDDD3</color>
+    <color name="light_on_user_bubble">#3A2E27</color>
+    <color name="light_assistant_bubble">#FFFFFF</color>
+    <color name="light_on_assistant_bubble">#25231F</color>
+    <color name="light_system_card">#F0EEE6</color>
+
+    <!-- Container roles — warm amber-tinted, replaces M3 default purple/lavender -->
+    <color name="light_primary_container">#FFD8C4</color>
+    <color name="light_on_primary_container">#3A1200</color>
+    <color name="light_secondary_container">#F0DDD4</color>
+    <color name="light_on_secondary_container">#3A1200</color>
+    <color name="light_tertiary_container">#F0EDE0</color>
+    <color name="light_on_tertiary_container">#1E1B00</color>
+    <color name="light_surface_container">#F5F3EC</color>
+    <color name="light_surface_container_high">#EFECEA</color>
+    <color name="light_surface_container_highest">#E8E5DE</color>
+
+    <!-- Claude-style dark palette (soft charcoal, not pure black) -->
+    <color name="dark_background">#262624</color>
+    <color name="dark_surface">#30302E</color>
+    <color name="dark_surface_variant">#3A3A37</color>
+    <color name="dark_on_background">#F2F0E9</color>
+    <color name="dark_on_surface">#F2F0E9</color>
+    <color name="dark_on_surface_variant">#A8A69C</color>
+    <color name="dark_outline">#45443F</color>
+
+    <color name="dark_user_bubble">#4A3B32</color>
+    <color name="dark_on_user_bubble">#F2E7DF</color>
+    <color name="dark_assistant_bubble">#30302E</color>
+    <color name="dark_on_assistant_bubble">#F2F0E9</color>
+    <color name="dark_system_card">#33332F</color>
+
+    <!-- Container roles (dark) -->
+    <color name="dark_primary_container">#6B2D18</color>
+    <color name="dark_on_primary_container">#FFD8C4</color>
+    <color name="dark_secondary_container">#5A3028</color>
+    <color name="dark_on_secondary_container">#F0DDD4</color>
+    <color name="dark_tertiary_container">#3D3A20</color>
+    <color name="dark_on_tertiary_container">#E8E4C8</color>
+    <color name="dark_surface_container">#2D2D2B</color>
+    <color name="dark_surface_container_high">#333330</color>
+    <color name="dark_surface_container_highest">#3A3A37</color>
+</resources>

@@ -1,0 +1,23 @@
+services:
+  intern-diary-api:
+    image: intern-diary:local
+    container_name: intern-diary-api
+    restart: unless-stopped
+    mem_limit: 256m
+    env_file:
+      - /opt/intern-diary-deploy/.env
+    environment:
+      DATA_DIR: /data
+      TEMPLATE_PATH: /data/templates/diary_template_working.docx
+      CODEX_HOME: /root/.codex
+    volumes:
+      - /opt/intern-diary-deploy:/data
+      - /opt/intern-diary-deploy/.codex:/root/.codex
+    ports:
+      - "127.0.0.1:8088:8088"
+    networks:
+      - sub2api_sub2api-network
+
+networks:
+  sub2api_sub2api-network:
+    external: true

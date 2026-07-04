@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Warm diary card, matching the app's Claude-like cream/coral palette. -->
+    <path
+        android:fillColor="#FBE8DD"
+        android:pathData="M31,23 C31,20.8 32.8,19 35,19 L74,19 C76.8,19 79,21.2 79,24 L79,82 C79,85.3 76.3,88 73,88 L36,88 C32.7,88 30,85.3 30,82 L30,24 C30,23.4 30.4,23 31,23 Z" />
+    <path
+        android:fillColor="#FFFDF8"
+        android:pathData="M35,23 L73,23 C75,23 77,25 77,27 L77,80 C77,82.2 75.2,84 73,84 L38,84 C35.2,84 33,81.8 33,79 L33,25 C33,23.9 33.9,23 35,23 Z" />
+    <path
+        android:fillColor="#D97757"
+        android:pathData="M35,23 L42,23 L42,84 L38,84 C35.2,84 33,81.8 33,79 L33,25 C33,23.9 33.9,23 35,23 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.55"
+        android:pathData="M38,31 C39.1,31 40,31.9 40,33 C40,34.1 39.1,35 38,35 C36.9,35 36,34.1 36,33 C36,31.9 36.9,31 38,31 Z M38,44 C39.1,44 40,44.9 40,46 C40,47.1 39.1,48 38,48 C36.9,48 36,47.1 36,46 C36,44.9 36.9,44 38,44 Z M38,57 C39.1,57 40,57.9 40,59 C40,60.1 39.1,61 38,61 C36.9,61 36,60.1 36,59 C36,57.9 36.9,57 38,57 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M49,36 L68,36 M49,47 L66,47 M49,58 L61,58"
+        android:strokeColor="#D97757"
+        android:strokeWidth="3"
+        android:strokeAlpha="0.7"
+        android:strokeLineCap="round" />
+
+    <!-- Chat bubble: AI assistant affordance without leaving the diary metaphor. -->
+    <path
+        android:fillColor="#BF6248"
+        android:pathData="M56,55 C56,49.5 60.5,45 66,45 L76,45 C81.5,45 86,49.5 86,55 L86,63 C86,68.5 81.5,73 76,73 L70,73 L60,81 L62.8,73 L66,73 C60.5,73 56,68.5 56,63 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M64,56 L78,56 M64,63 L74,63"
+        android:strokeColor="#FFFDF8"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+
+    <!-- Small spark keeps the icon aligned with the assistant feature. -->
+    <path
+        android:fillColor="#FFF2E8"
+        android:pathData="M77,29 L80,35 L86,38 L80,41 L77,47 L74,41 L68,38 L74,35 Z" />
+</vector>

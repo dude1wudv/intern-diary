@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">实习日记</string>
+    <string name="settings_title">设置</string>
+
+    <!-- Top bar -->
+    <string name="action_settings">设置</string>
+    <string name="action_change_date">切换日期</string>
+
+    <!-- Compose bar -->
+    <string name="hint_message">记录今天做了什么…</string>
+    <string name="action_attach">添加图片</string>
+    <string name="action_send">发送</string>
+
+    <!-- Attach sheet -->
+    <string name="attach_camera">拍照</string>
+    <string name="attach_gallery">从相册选择</string>
+
+    <!-- Actions -->
+    <string name="action_sort_day">整理今日素材</string>
+    <string name="action_generate_diary">生成正式日记</string>
+    <string name="action_generate_draft">生成日记草稿</string>
+    <string name="action_download_docx">下载 Word</string>
+    <string name="action_refresh">刷新状态</string>
+    <string name="action_copy">复制</string>
+    <string name="draft_card_title">日记草稿</string>
+    <string name="draft_copied">草稿已复制到剪贴板</string>
+
+    <!-- Album picker sheet -->
+    <string name="album_title">选择图片</string>
+    <string name="album_send">发送</string>
+    <string name="album_empty">没有找到图片</string>
+    <string name="album_need_permission">需要照片访问权限才能选择图片</string>
+    <string name="album_caption_hint">给这些图片配文（可选）…</string>
+    <string name="album_take_photo">拍照</string>
+    <string name="album_selected_count">已选 %1$d 张</string>
+
+    <!-- Navigation drawer -->
+    <string name="drawer_new_chat">新建聊天</string>
+    <string name="drawer_history_title">历史记录</string>
+    <string name="drawer_open">打开历史</string>
+    <string name="drawer_no_history">还没有历史记录</string>
+    <string name="drawer_today">今天</string>
+
+    <!-- Settings sheet -->
+    <string name="settings_token_hint">API Token</string>
+    <string name="settings_server_hint">https://your-domain.example</string>
+    <string name="settings_save">保存</string>
+    <string name="settings_test">测试连接</string>
+    <string name="settings_theme">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_server_label">服务器</string>
+
+    <!-- Empty state -->
+    <string name="empty_title">开始记录今天</string>
+    <string name="empty_subtitle">发送文字或图片，随时整理成正式日记。</string>
+
+    <!-- Mode tabs -->
+    <string name="tab_diary">日记</string>
+    <string name="tab_assistant">AI 助手</string>
+
+    <!-- AI Assistant -->
+    <string name="action_enter_diary_edit">进入日记修改模式</string>
+    <string name="action_exit_diary_edit">退出修改模式</string>
+    <string name="diary_edit_mode_enter_note">已进入日记修改模式 · %1$s\n将基于当天整理稿、草稿、图片说明生成修改建议，仅生成预览，不会直接写回。</string>
+    <string name="diary_edit_mode_exit_note">已退出日记修改模式，回到普通聊天。</string>
+    <string name="assistant_hint_message">输入消息…</string>
+    <string name="assistant_hint_message_edit">描述你想怎么修改今天的日记…</string>
+    <string name="assistant_empty_title">开始和 AI 聊天</string>
+    <string name="assistant_empty_subtitle">普通聊天不会读取日记内容。需要修改今天的日记时，切换"进入日记修改模式"。</string>
+    <string name="assistant_send_failed">发送失败: %1$s</string>
+    <string name="assistant_retry">重试</string>
+    <string name="preview_card_title">修改预览</string>
+    <string name="preview_no_target">本次未涉及需要修改的文件。</string>
+    <string name="preview_confirm">确认写回</string>
+    <string name="preview_cancel">取消</string>
+    <string name="preview_confirmed">已同步到后端</string>
+    <string name="preview_cancelled">已取消，未修改任何文件</string>
+    <string name="preview_confirm_failed">写回失败: %1$s，请重试</string>
+    <string name="preview_expired">修改预览已过期，请重新生成修改预览</string>
+    <string name="preview_show_diff">展开查看改动</string>
+    <string name="preview_hide_diff">收起改动</string>
+    <string name="preview_before_label">修改前:\n%1$s</string>
+    <string name="preview_after_label">修改后:\n%1$s</string>
+    <string name="preview_view_draft">查看草稿</string>
+    <string name="preview_generate_final">生成正式日记</string>
+    <string name="preview_back_diary">回到日记页</string>
+    <string name="assistant_busy">AI 正在回复…</string>
+    <string name="assistant_copied">已复制</string>
+    <string name="assistant_regenerate">重新生成</string>
+    <string name="assistant_delete">删除</string>
+    <string name="assistant_rename">重命名</string>
+    <string name="assistant_delete_session_title">删除这个对话？</string>
+    <string name="assistant_rename_session_title">重命名对话</string>
+    <string name="assistant_session_search_hint">搜索对话…</string>
+    <string name="assistant_editing_date">修改：%1$s</string>
+    <string name="assistant_target_draft">草稿</string>
+    <string name="assistant_target_sorted">整理稿</string>
+    <string name="assistant_target_images">图片说明</string>
+
+    <!-- Assistant sessions (drawer) -->
+    <string name="drawer_new_session">新建对话</string>
+    <string name="drawer_sessions_title">最近对话</string>
+    <string name="drawer_no_sessions">还没有对话记录</string>
+    <string name="drawer_session_current">当前</string>
+</resources>

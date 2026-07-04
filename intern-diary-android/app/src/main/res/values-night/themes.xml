@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.InternDiary" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/brand_coral</item>
+        <item name="colorPrimaryDark">@color/brand_coral_dark</item>
+        <item name="colorOnPrimary">#2A1810</item>
+        <item name="colorPrimaryContainer">@color/dark_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/dark_on_primary_container</item>
+        <item name="colorSecondary">@color/brand_coral</item>
+        <item name="colorOnSecondary">#2A1810</item>
+        <item name="colorSecondaryContainer">@color/dark_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/dark_on_secondary_container</item>
+        <item name="colorTertiary">@color/brand_coral</item>
+        <item name="colorOnTertiary">#2A1810</item>
+        <item name="colorTertiaryContainer">@color/dark_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/dark_on_tertiary_container</item>
+        <item name="colorSurfaceContainer">@color/dark_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/dark_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/dark_surface_container_highest</item>
+
+        <item name="android:colorBackground">@color/dark_background</item>
+        <item name="colorOnBackground">@color/dark_on_background</item>
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorOnSurface">@color/dark_on_surface</item>
+        <item name="colorSurfaceVariant">@color/dark_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/dark_on_surface_variant</item>
+        <item name="colorOutline">@color/dark_outline</item>
+
+        <item name="bubbleUserColor">@color/dark_user_bubble</item>
+        <item name="bubbleUserTextColor">@color/dark_on_user_bubble</item>
+        <item name="bubbleAssistantColor">@color/dark_assistant_bubble</item>
+        <item name="bubbleAssistantTextColor">@color/dark_on_assistant_bubble</item>
+        <item name="systemCardColor">@color/dark_system_card</item>
+
+        <item name="android:statusBarColor">@color/dark_background</item>
+        <item name="android:navigationBarColor">@color/dark_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.InternDiary.Dialog</item>
+    </style>
+
+</resources>

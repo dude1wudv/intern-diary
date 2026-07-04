@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="bubbleUserColor" format="color" />
+    <attr name="bubbleUserTextColor" format="color" />
+    <attr name="bubbleAssistantColor" format="color" />
+    <attr name="bubbleAssistantTextColor" format="color" />
+    <attr name="systemCardColor" format="color" />
+</resources>
