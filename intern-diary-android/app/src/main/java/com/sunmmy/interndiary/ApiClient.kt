@@ -7,9 +7,11 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -88,6 +90,29 @@ class ApiClient(private val serverUrl: String, private val token: String) {
             .addFormDataPart("note", note)
             .addFormDataPart("exclude_from_diary", excludeFromDiary.toString())
             .addFormDataPart("image", filename, bytes.toRequestBody(mediaType))
+            .build()
+        val request = authedRequestBuilder("/api/entries/image")
+            .post(multipart)
+            .build()
+        return runCatchingRequest(request).mapCatching { response ->
+            response.use { extractBodyOrThrow(it) }
+        }
+    }
+
+    suspend fun uploadImage(
+        date: String,
+        file: File,
+        filename: String,
+        note: String = "",
+        excludeFromDiary: Boolean = false
+    ): Result<String> {
+        val mediaType = guessImageMediaType(filename)
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("date", date)
+            .addFormDataPart("note", note)
+            .addFormDataPart("exclude_from_diary", excludeFromDiary.toString())
+            .addFormDataPart("image", filename, file.asRequestBody(mediaType))
             .build()
         val request = authedRequestBuilder("/api/entries/image")
             .post(multipart)

@@ -763,6 +763,7 @@ async function regenerateAssistantMessage(id){
 # raw_text.md, images/*, diary_final.docx are never reachable through this set.
 _ALLOWED_EDIT_TARGETS = {"sorted_notes.md", "diary_draft.md"}
 _ALLOWED_IMAGE_DESC_RE = re.compile(r"^image_descriptions/[A-Za-z0-9_-]+\.md$")
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
 
 # In-memory preview store: preview_id -> {workspace, date, changes}. Previews
 # are short-lived (confirm-or-discard within the same session), so losing them
@@ -782,6 +783,20 @@ def _target_requested(target: str, requested: list[str]) -> bool:
     if target in requested:
         return True
     return target.startswith("image_descriptions/") and "image_descriptions" in requested
+
+
+async def _save_upload_limited(upload: UploadFile, target, max_bytes: int) -> None:
+    total = 0
+    try:
+        with target.open("wb") as f:
+            while chunk := await upload.read(_UPLOAD_CHUNK_BYTES):
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(status_code=413, detail="image too large")
+                f.write(chunk)
+    except HTTPException:
+        target.unlink(missing_ok=True)
+        raise
 
 
 @app.get("/console")
@@ -871,7 +886,7 @@ async def add_image(
     img_id = "img_" + uuid4().hex[:12]
     filename = f"{img_id}.{suffix}"
     img_path = p / "images" / filename
-    img_path.write_bytes(await image.read())
+    await _save_upload_limited(image, img_path, settings().max_image_upload_bytes)
     # Vision description is deferred (proxy returns 502 for images). When
     # disabled, or if the vision call fails, still archive the image with a
     # placeholder description and mark it "stored" so the photo is never lost
@@ -1106,7 +1121,10 @@ async def generate_diary(body: GenerateIn, user: UserContext = Depends(require_u
 
 @app.get("/api/days/{date}/draft", )
 def download_draft(date: str, user: UserContext = Depends(require_user)):
-    f = day_dir(date, user) / "diary_draft.md"
+    try:
+        f = day_dir(date, user) / "diary_draft.md"
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bad date")
     if not f.exists():
         raise HTTPException(status_code=404, detail="draft not found")
     return PlainTextResponse(f.read_text(encoding="utf-8"))
@@ -1114,7 +1132,10 @@ def download_draft(date: str, user: UserContext = Depends(require_user)):
 
 @app.get("/api/days/{date}/files/diary_final.docx", )
 def download_docx(date: str, user: UserContext = Depends(require_user)):
-    f = day_dir(date, user) / "diary_final.docx"
+    try:
+        f = day_dir(date, user) / "diary_final.docx"
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bad date")
     if not f.exists():
         raise HTTPException(status_code=404, detail="docx not found")
     return FileResponse(f, filename=f"diary_final_{date}.docx")
@@ -1122,7 +1143,10 @@ def download_docx(date: str, user: UserContext = Depends(require_user)):
 
 @app.get("/api/days/{date}/image-descriptions", )
 def list_image_descriptions(date: str, user: UserContext = Depends(require_user)):
-    p = day_dir(date, user)
+    try:
+        p = day_dir(date, user)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bad date")
     out = {}
     for f in sorted((p / "image_descriptions").glob("*.md")):
         out[f.stem] = f.read_text(encoding="utf-8")

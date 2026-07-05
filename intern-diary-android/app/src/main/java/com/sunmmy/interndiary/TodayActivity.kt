@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -39,6 +41,11 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+
+private const val MAX_UPLOAD_IMAGE_COUNT = 12
+private const val MAX_UPLOAD_IMAGE_BYTES = 12L * 1024L * 1024L
+private const val UPLOAD_IMAGE_LONG_EDGE_PX = 1600
+private const val UPLOAD_IMAGE_JPEG_QUALITY = 85
 
 class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
 
@@ -843,29 +850,105 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
         val cap = caption.trim().takeIf { it.isNotEmpty() }
         setBusy(true)
         lifecycleScope.launch {
-            var failures = 0
-            for ((index, uri) in uris.withIndex()) {
-                val bytes = withContext(Dispatchers.IO) {
-                    runCatching { contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+            var failures = (uris.size - MAX_UPLOAD_IMAGE_COUNT).coerceAtLeast(0)
+            for ((index, uri) in uris.take(MAX_UPLOAD_IMAGE_COUNT).withIndex()) {
+                val filename = "img_${System.currentTimeMillis()}_$index.jpg"
+                val uploadFile = withContext(Dispatchers.IO) {
+                    copyUriToTempUploadFile(uri, filename)
                 }
-                if (bytes == null) {
+                if (uploadFile == null) {
                     failures++
                     continue
                 }
-                val filename = "img_${System.currentTimeMillis()}_$index.jpg"
                 val localPath = withContext(Dispatchers.IO) {
                     conversationStore.persistImage(uri, filename)
                 }
                 addChatMessage(
                     ChatMessage.UserImage(nextChatId(), nowTimeString(), uri, localPath, if (index == 0) cap else null)
                 )
-                val result = client.uploadImage(currentDate, bytes, filename, note = cap.orEmpty())
+                val result = try {
+                    client.uploadImage(currentDate, uploadFile, filename, note = cap.orEmpty())
+                } finally {
+                    withContext(Dispatchers.IO) { uploadFile.delete() }
+                }
                 if (result.isFailure) failures++
             }
             setBusy(false)
             if (failures > 0) snack("有 $failures 张图片上传失败")
             refreshStatus()
         }
+    }
+
+    private fun copyUriToTempUploadFile(uri: Uri, filename: String): File? {
+        val file = File(cacheDir, "upload_$filename")
+        return try {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return copyUriWithLimit(uri, file)
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = imageSampleSize(bounds.outWidth, bounds.outHeight)
+            }
+            val decoded = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, decodeOptions)
+            } ?: return null
+            val maxEdge = maxOf(decoded.width, decoded.height)
+            val uploadBitmap = if (maxEdge > UPLOAD_IMAGE_LONG_EDGE_PX) {
+                val scale = UPLOAD_IMAGE_LONG_EDGE_PX.toFloat() / maxEdge.toFloat()
+                Bitmap.createScaledBitmap(
+                    decoded,
+                    (decoded.width * scale).toInt().coerceAtLeast(1),
+                    (decoded.height * scale).toInt().coerceAtLeast(1),
+                    true
+                )
+            } else {
+                decoded
+            }
+            FileOutputStream(file).use { out ->
+                if (!uploadBitmap.compress(Bitmap.CompressFormat.JPEG, UPLOAD_IMAGE_JPEG_QUALITY, out)) {
+                    file.delete()
+                    return null
+                }
+            }
+            if (uploadBitmap !== decoded) uploadBitmap.recycle()
+            decoded.recycle()
+            file.takeIf { it.length() <= MAX_UPLOAD_IMAGE_BYTES } ?: run {
+                file.delete()
+                null
+            }
+        } catch (e: Exception) {
+            file.delete()
+            null
+        }
+    }
+
+    private fun imageSampleSize(width: Int, height: Int): Int {
+        var sample = 1
+        while (width / sample > UPLOAD_IMAGE_LONG_EDGE_PX * 2 || height / sample > UPLOAD_IMAGE_LONG_EDGE_PX * 2) {
+            sample *= 2
+        }
+        return sample
+    }
+
+    private fun copyUriWithLimit(uri: Uri, file: File): File? {
+        val input = contentResolver.openInputStream(uri) ?: return null
+        input.use { source ->
+            FileOutputStream(file).use { sink ->
+                val buffer = ByteArray(64 * 1024)
+                var total = 0L
+                while (true) {
+                    val read = source.read(buffer)
+                    if (read < 0) break
+                    total += read
+                    if (total > MAX_UPLOAD_IMAGE_BYTES) {
+                        file.delete()
+                        return null
+                    }
+                    sink.write(buffer, 0, read)
+                }
+            }
+        }
+        return file
     }
 
     // endregion

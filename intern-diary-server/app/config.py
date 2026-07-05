@@ -31,6 +31,9 @@ class Settings(BaseModel):
     codex_timeout_seconds: int = Field(
         default_factory=lambda: int(os.getenv("CODEX_TIMEOUT_SECONDS", "180"))
     )
+    max_image_upload_bytes: int = Field(
+        default_factory=lambda: int(os.getenv("MAX_IMAGE_UPLOAD_BYTES", str(12 * 1024 * 1024)))
+    )
 
 
 @lru_cache

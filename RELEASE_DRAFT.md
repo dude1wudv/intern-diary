@@ -1,18 +1,17 @@
-# Intern Diary v2.1.0
+# Intern Diary v2.1.1
 
 ## Highlights
 
-- 新增实习成果生成器：周报、月报、实习总结。
-- 新增 Report API：模板列表、日期范围生成、Markdown/Word 下载。
-- Web Console 新增 Report 区，可选择类型、日期范围和模板。
-- Android 新增“生成周报”入口，生成后自动保存 Word。
-- 增加 weekly/monthly/summary、缺天、LLM 失败等后端回归测试。
+- Android 上传图片前自动压缩为长边 1600px、JPEG 质量 85。
+- Android 上传大图改用临时文件请求体，避免一次性读取大图到请求内存。
+- 后端图片上传增加大小上限，超限返回 HTTP 413。
+- 后端非法日期读取接口返回 HTTP 400，避免 500。
 
 ## Assets
 
-- `intern-diary-debug-v2.1.0.apk`
+- `intern-diary-debug-v2.1.1.apk`
 
 ## Verification
 
-- Backend: `python -m pytest` -> 37 passed
+- Backend: `python -m pytest` -> 39 passed
 - Android: `.\gradlew.bat :app:assembleDebug` -> BUILD SUCCESSFUL

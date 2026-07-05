@@ -62,3 +62,17 @@ def test_image_upload_describes_with_codex_cli(tmp_path, monkeypatch):
     assert s["described_image_count"] == 1
     desc = next((tmp_path / "workdays" / "2026-07-01" / "image_descriptions").glob("*.md"))
     assert desc.read_text(encoding="utf-8") == "# codex image md\n"
+
+
+def test_image_upload_rejects_oversized_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MAX_IMAGE_UPLOAD_BYTES", "8")
+    settings.cache_clear()
+    c = TestClient(app)
+    r = c.post(
+        "/api/entries/image",
+        headers=H,
+        data={"date": "2026-07-01", "note": "too big"},
+        files={"image": ("a.jpg", b"123456789", "image/jpeg")},
+    )
+    assert r.status_code == 413
