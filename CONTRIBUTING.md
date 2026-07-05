@@ -7,7 +7,7 @@
 1. Fork 仓库并创建功能分支。
 2. 后端改动运行 `pytest`。
 3. Android 改动运行 `./gradlew assembleDebug`。
-4. 不提交 `.env`、数据库、APK、签名密钥和本地构建产物。
+4. 不提交 `.env`、数据库、APK、签名密钥、本地构建产物、私有部署路径或 `.codex` 挂载。
 5. 提交 PR，说明变更、测试结果和影响范围。
 
 ## Commit 风格

@@ -72,6 +72,8 @@ CODEX_ENABLED=0
 
 `OPENAI_BASE_URL` 可换成任意 OpenAI-compatible 服务商地址。不要把真实 Key 写进 Android 或提交到 Git。
 
+公共包的 `docker-compose.yml` 是本地自托管模板：默认读取 `./.env`，把运行数据放在 `./data`，不挂载 `.codex`，也不假设任何私有 HK 共享服务器网络或 `/opt/*-deploy` 目录。
+
 ### 3. 构建 Android APK
 
 ```bash
