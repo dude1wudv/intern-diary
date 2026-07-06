@@ -7,6 +7,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil3.load
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
 import java.io.File
 
 /**
@@ -96,10 +100,19 @@ class ChatAdapter(
             // Prefer the persisted local copy (survives restarts); fall back to
             // the original content Uri for freshly-picked images.
             val localFile = item.localPath?.let { File(it) }?.takeIf { it.exists() }
-            when {
-                localFile != null -> thumb.setImageURI(Uri.fromFile(localFile))
-                item.uri != null -> thumb.setImageURI(item.uri)
-                else -> thumb.setImageResource(R.drawable.ic_gallery)
+            val image = when {
+                localFile != null -> Uri.fromFile(localFile)
+                item.uri != null -> item.uri
+                else -> null
+            }
+            if (image != null) {
+                thumb.load(image) {
+                    placeholder(R.drawable.ic_gallery)
+                    error(R.drawable.ic_gallery)
+                    crossfade(false)
+                }
+            } else {
+                thumb.setImageResource(R.drawable.ic_gallery)
             }
             if (item.caption.isNullOrBlank()) {
                 caption.visibility = View.GONE

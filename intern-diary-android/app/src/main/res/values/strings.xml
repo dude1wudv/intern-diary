@@ -31,6 +31,7 @@
     <string name="album_title">选择图片</string>
     <string name="album_send">发送</string>
     <string name="album_empty">没有找到图片</string>
+    <string name="album_loading">正在加载最近照片…</string>
     <string name="album_need_permission">需要照片访问权限才能选择图片</string>
     <string name="album_caption_hint">给这些图片配文（可选）…</string>
     <string name="album_take_photo">拍照</string>

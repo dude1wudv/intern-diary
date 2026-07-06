@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -29,6 +30,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.sunmmy.interndiary.databinding.ActivityTodayBinding
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -44,8 +47,10 @@ import java.util.TimeZone
 
 private const val MAX_UPLOAD_IMAGE_COUNT = 12
 private const val MAX_UPLOAD_IMAGE_BYTES = 12L * 1024L * 1024L
-private const val UPLOAD_IMAGE_LONG_EDGE_PX = 1600
-private const val UPLOAD_IMAGE_JPEG_QUALITY = 85
+private const val DIRECT_UPLOAD_IMAGE_BYTES = 2L * 1024L * 1024L
+private const val MAX_PARALLEL_IMAGE_UPLOADS = 3
+private const val UPLOAD_IMAGE_LONG_EDGE_PX = 1280
+private const val UPLOAD_IMAGE_JPEG_QUALITY = 78
 
 class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
 
@@ -851,27 +856,27 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
         setBusy(true)
         lifecycleScope.launch {
             var failures = (uris.size - MAX_UPLOAD_IMAGE_COUNT).coerceAtLeast(0)
-            for ((index, uri) in uris.take(MAX_UPLOAD_IMAGE_COUNT).withIndex()) {
-                val filename = "img_${System.currentTimeMillis()}_$index.jpg"
-                val uploadFile = withContext(Dispatchers.IO) {
-                    copyUriToTempUploadFile(uri, filename)
-                }
-                if (uploadFile == null) {
-                    failures++
-                    continue
-                }
-                val localPath = withContext(Dispatchers.IO) {
-                    conversationStore.persistImage(uri, filename)
-                }
-                addChatMessage(
-                    ChatMessage.UserImage(nextChatId(), nowTimeString(), uri, localPath, if (index == 0) cap else null)
-                )
-                val result = try {
-                    client.uploadImage(currentDate, uploadFile, filename, note = cap.orEmpty())
-                } finally {
-                    withContext(Dispatchers.IO) { uploadFile.delete() }
-                }
-                if (result.isFailure) failures++
+            for (batch in uris.take(MAX_UPLOAD_IMAGE_COUNT).withIndex().chunked(MAX_PARALLEL_IMAGE_UPLOADS)) {
+                failures += batch.map { (index, uri) ->
+                    async {
+                        val filename = "img_${System.currentTimeMillis()}_$index.jpg"
+                        val uploadFile = withContext(Dispatchers.IO) {
+                            copyUriToTempUploadFile(uri, filename)
+                        } ?: return@async 1
+                        val localPath = withContext(Dispatchers.IO) {
+                            conversationStore.persistImage(uri, filename)
+                        }
+                        addChatMessage(
+                            ChatMessage.UserImage(nextChatId(), nowTimeString(), uri, localPath, if (index == 0) cap else null)
+                        )
+                        val result = try {
+                            client.uploadImage(currentDate, uploadFile, filename, note = cap.orEmpty())
+                        } finally {
+                            withContext(Dispatchers.IO) { uploadFile.delete() }
+                        }
+                        if (result.isFailure) 1 else 0
+                    }
+                }.awaitAll().sum()
             }
             setBusy(false)
             if (failures > 0) snack("有 $failures 张图片上传失败")
@@ -882,9 +887,17 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
     private fun copyUriToTempUploadFile(uri: Uri, filename: String): File? {
         val file = File(cacheDir, "upload_$filename")
         return try {
+            val sourceSize = uriSize(uri)
+            if (sourceSize in 1..DIRECT_UPLOAD_IMAGE_BYTES) {
+                return copyUriWithLimit(uri, file, DIRECT_UPLOAD_IMAGE_BYTES)
+            }
+
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return copyUriWithLimit(uri, file)
+            val boundsInput = contentResolver.openInputStream(uri) ?: return null
+            boundsInput.use { BitmapFactory.decodeStream(it, null, bounds) }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return copyUriWithLimit(uri, file, MAX_UPLOAD_IMAGE_BYTES)
+            }
 
             val decodeOptions = BitmapFactory.Options().apply {
                 inSampleSize = imageSampleSize(bounds.outWidth, bounds.outHeight)
@@ -930,7 +943,15 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
         return sample
     }
 
-    private fun copyUriWithLimit(uri: Uri, file: File): File? {
+    private fun uriSize(uri: Uri): Long {
+        contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (index >= 0 && cursor.moveToFirst()) return cursor.getLong(index)
+        }
+        return contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1L
+    }
+
+    private fun copyUriWithLimit(uri: Uri, file: File, maxBytes: Long): File? {
         val input = contentResolver.openInputStream(uri) ?: return null
         input.use { source ->
             FileOutputStream(file).use { sink ->
@@ -940,7 +961,7 @@ class TodayActivity : AppCompatActivity(), AlbumPickerSheet.Listener {
                     val read = source.read(buffer)
                     if (read < 0) break
                     total += read
-                    if (total > MAX_UPLOAD_IMAGE_BYTES) {
+                    if (total > maxBytes) {
                         file.delete()
                         return null
                     }
