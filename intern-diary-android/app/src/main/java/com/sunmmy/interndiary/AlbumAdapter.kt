@@ -6,6 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
+import coil3.load
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
 
 /**
  * Grid adapter for the in-app album picker. Renders device photos (queried via
@@ -40,37 +44,54 @@ class AlbumAdapter(
     }
 
     override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-        val uri = photos[position]
-        holder.itemView.post {
-            val size = holder.itemView.width
-            if (size > 0 && holder.itemView.height != size) {
-                holder.itemView.layoutParams = holder.itemView.layoutParams.apply {
-                    height = size
-                }
-                holder.itemView.requestLayout()
-            }
-        }
-        holder.photo.setImageURI(uri)
-        val isSelected = selected.contains(uri)
-        holder.setSelected(isSelected)
-        holder.itemView.setOnClickListener {
-            if (selected.contains(uri)) {
-                selected.remove(uri)
-            } else {
-                selected.add(uri)
-            }
-            notifyItemChanged(position)
-            onSelectionChanged(selectedUris())
+        holder.bind(photos[position], selected.contains(photos[position]))
+    }
+
+    override fun onBindViewHolder(holder: PhotoHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            holder.setSelected(selected.contains(photos[position]))
+        } else {
+            onBindViewHolder(holder, position)
         }
     }
 
-    class PhotoHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class PhotoHolder(view: View) : RecyclerView.ViewHolder(view) {
         val photo: ImageView = view.findViewById(R.id.imagePhoto)
         private val overlay: View = view.findViewById(R.id.selectionOverlay)
         private val badge: ImageView = view.findViewById(R.id.checkBadge)
+        fun bind(uri: Uri, isSelected: Boolean) {
+            photo.tag = uri
+            itemView.post {
+                val size = itemView.width
+                if (size > 0 && itemView.height != size) {
+                    itemView.layoutParams = itemView.layoutParams.apply { height = size }
+                    itemView.requestLayout()
+                }
+                if (photo.tag == uri) {
+                    photo.load(uri) {
+                        placeholder(R.drawable.ic_gallery)
+                        error(R.drawable.ic_gallery)
+                        crossfade(false)
+                    }
+                }
+            }
+            setSelected(isSelected)
+            itemView.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION) return@setOnClickListener
+                val clicked = photo.tag as? Uri ?: return@setOnClickListener
+                if (selected.contains(clicked)) selected.remove(clicked) else selected.add(clicked)
+                notifyItemChanged(position, PAYLOAD_SELECTION)
+                onSelectionChanged(selectedUris())
+            }
+        }
         fun setSelected(selected: Boolean) {
             overlay.visibility = if (selected) View.VISIBLE else View.GONE
             badge.visibility = if (selected) View.VISIBLE else View.GONE
         }
+    }
+
+    companion object {
+        private const val PAYLOAD_SELECTION = "selection"
     }
 }

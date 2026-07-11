@@ -21,6 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val MAX_ALBUM_IMAGE_QUERY = 240
+
 /**
  * In-app album picker shown from the compose bar "+" button.
  *
@@ -115,9 +117,13 @@ class AlbumPickerSheet : BottomSheetDialogFragment() {
 
     private fun loadPhotos() {
         binding.textPermission.visibility = View.GONE
+        binding.textEmpty.visibility = View.GONE
+        binding.recyclerAlbum.visibility = View.GONE
+        binding.albumLoading.visibility = View.VISIBLE
         lifecycleScope.launch {
             val uris = withContext(Dispatchers.IO) { queryImages() }
             if (_binding == null) return@launch
+            binding.albumLoading.visibility = View.GONE
             albumAdapter.submit(uris)
             binding.textEmpty.visibility = if (uris.isEmpty()) View.VISIBLE else View.GONE
             binding.recyclerAlbum.visibility = if (uris.isEmpty()) View.GONE else View.VISIBLE
@@ -133,7 +139,7 @@ class AlbumPickerSheet : BottomSheetDialogFragment() {
             collection, projection, null, null, sortOrder
         )?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-            while (cursor.moveToNext()) {
+            while (cursor.moveToNext() && out.size < MAX_ALBUM_IMAGE_QUERY) {
                 val id = cursor.getLong(idColumn)
                 out.add(Uri.withAppendedPath(collection, id.toString()))
             }
